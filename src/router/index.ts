@@ -1,25 +1,67 @@
 import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
+import store from '@/store'
+import { useStore } from 'vuex'
+import { firebase } from '@/firebase/firebase-config'
 
 const routes: Array<RouteRecordRaw> = [
   {
-    path: '/',
-    name: 'home',
-    component: HomeView
+    path: '/login',
+    name: 'login',
+    component: () => import('@/components/auth/LoginComponent.vue'),
+    meta: { auth: false }
   },
   {
-    path: '/about',
-    name: 'about',
-    // route level code-splitting
-    // this generates a separate chunk (about.[hash].js) for this route
-    // which is lazy-loaded when the route is visited.
-    component: () => import(/* webpackChunkName: "about" */ '../views/AboutView.vue')
+    path: '/register',
+    name: 'register',
+    component: () => import('@/components/auth/RegisterComponent.vue'),
+    meta: { auth: false }
+  },
+  {
+    path: '/',
+    name: 'home',
+    component: HomeView,
+    meta: { auth: true }
   }
 ]
 
 const router = createRouter({
   history: createWebHistory(process.env.BASE_URL),
   routes
+})
+
+router.beforeEach( async (to, from, next) => {
+  // if (store.state.auth.uid === '') {
+  //   firebase.auth().onAuthStateChanged( async (user) => {
+  //     console.log(user)
+  //     if (user?.uid) {
+  //       store.commit(
+  //         'login',
+  //         {
+  //           uid: user.uid,
+  //           name: user.displayName
+  //         }
+  //       )
+  //       router.push('/')
+  //     }
+  //   })
+  // }
+  const requiresAuth = to.matched.some(route => route.meta.auth)
+  // console.log(store.getters.isAuthenticated)
+  // if (store.getters.isAuthenticated) next({ name: 'home' })
+  // else next('login')
+  if (requiresAuth) {
+    if (store.getters.isAuthenticated) {
+      next()
+    }
+    else next({ name: 'login' })
+  } else if (!requiresAuth) {
+    if (store.getters.isAuthenticated) {
+      next({ path: '/' })
+    }
+    else next()
+  } 
+
 })
 
 export default router
